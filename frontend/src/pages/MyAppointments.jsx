@@ -105,11 +105,13 @@ const MyAppointments = () => {
                                             </div>
 
                                             <div className='flex flex-col gap-2 justify-end text-sm text-center'>
-                                                {item.isCompleted && !item.cancelled ? (
+                                                {!item.cancelled && !item.isCompleted ? (
                                                     <ChatButton userId={item.userData._id} openChat={() => openChat(item)} />
                                                 ) : item.cancelled ? (
                                                     <p className="text-gray-500">Book again to access chat</p>
-                                                ) : null}
+                                                ) : (
+                                                    <p className="text-gray-500">Chat is available after completion</p>
+                                                )}
                         {!item.cancelled && !item.isCompleted && ( // ✅ Add conditional check
                             <CancelButton appointmentId={item._id} userData={item.userData}/>
                         )}
