@@ -43,7 +43,7 @@ const Appointment = () => {
 
         let today = new Date();
 
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < 30; i++) {
             let currentDate = new Date(today);
             currentDate.setDate(today.getDate() + i);
             
