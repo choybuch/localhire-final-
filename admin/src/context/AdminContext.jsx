@@ -13,7 +13,8 @@ const AdminContextProvider = (props) => {
 
     const [appointments, setAppointments] = useState([])
     const [contractors, setContractors] = useState([])
-    const [dashData, setDashData] = useState(false)
+    const [dashData, setDashData] = useState(null)
+    const [pendingApprovals, setPendingApprovals] = useState([]);
 
     // Getting all Contractors data from Database using API
     const getAllContractors = async () => {
@@ -109,24 +110,27 @@ const AdminContextProvider = (props) => {
 
     }
 
-    // Getting Admin Dashboard data from Database using API
     const getDashData = async () => {
         try {
-
-            const { data } = await axios.get(backendUrl + '/api/admin/dashboard', { headers: { aToken } })
-
+            // Fetch main dashboard data
+            const { data } = await axios.get(backendUrl + '/api/admin/dashboard', { headers: { aToken } });
+            
             if (data.success) {
-                setDashData(data.dashData)
-            } else {
-                toast.error(data.message)
+              // Filter pending approvals from latestAppointments
+              const pending = data.dashData.latestAppointments?.filter(
+                item => item.status === 'pending'
+              ) || [];
+              
+              setDashData({
+                ...data.dashData,
+                pendingApprovals: pending
+              });
             }
-
-        } catch (error) {
-            console.log(error)
-            toast.error(error.message)
-        }
-
-    }
+          } catch (error) {
+            console.log(error);
+            toast.error(error.message);
+          }
+        };
 
     // Add these new functions to your admin context
     const approveCompletion = async (appointmentId, approve) => {
@@ -156,11 +160,36 @@ const AdminContextProvider = (props) => {
                 backendUrl + '/api/admin/pending-approvals',
                 { headers: { aToken } }
             );
-            return data.appointments;
+            console.log("Pending Approvals Data:", data);
+            setPendingApprovals(data.appointments || []); // update the state
         } catch (error) {
             console.error(error);
             toast.error(error.message);
-            return [];
+        }
+    };
+
+    // Add this function to your admin context
+    const handleAppointmentApproval = async (appointmentId, approved) => {
+        try {
+            const { data } = await axios.post(
+                backendUrl + '/api/admin/handle-approval', // ← Verify this matches your backend route
+                {
+                    appointmentId,
+                    approved
+                },
+                { headers: { aToken } }
+            );
+
+            if (data.success) {
+                toast.success(data.message);
+                return true;
+            }
+            toast.error(data.message);
+            return false;
+        } catch (error) {
+            console.error(error);
+            toast.error(error.message);
+            return false;
         }
     };
 
@@ -177,7 +206,9 @@ const AdminContextProvider = (props) => {
         dashData,
         addContractor,
         approveCompletion,
-        getPendingApprovals
+        getPendingApprovals,
+        handleAppointmentApproval,
+        pendingApprovals,
     }
 
     return (

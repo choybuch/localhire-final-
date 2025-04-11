@@ -81,16 +81,35 @@ const appointmentCancel = async (req, res) => {
 const appointmentComplete = async (req, res) => {
     console.log('✅ appointmentComplete controller hit with:', req.body);
     try {
+        const { conId, appointmentId, imageUrl } = req.body;
 
-        const { conId, appointmentId } = req.body
+        // Find the appointment
+        const appointmentData = await appointmentModel.findById(appointmentId);
 
-        const appointmentData = await appointmentModel.findById(appointmentId)
-        if (appointmentData && appointmentData.conId === conId) {
-            await appointmentModel.findByIdAndUpdate(appointmentId, { isCompleted: true })
-            return res.json({ success: true, message: 'Appointment Completed' })
+        // Check if appointment exists
+        if (!appointmentData) {
+            return res.status(404).json({ success: false, message: "Appointment not found" });
         }
 
-        res.json({ success: false, message: 'Appointment Cancelled' })
+        // Ensure contractor is allowed to complete this appointment
+        if (appointmentData.conId !== conId) {
+            return res.status(403).json({ success: false, message: "Unauthorized completion" });
+        }
+
+        // Update the appointment
+        const updatedAppointment = await appointmentModel.findByIdAndUpdate(
+            appointmentId,
+            {
+                status: 'pending', // Change from 'pending' to 'pendingApproval'
+                proofImage: imageUrl,
+                isCompleted: false,
+                cancelled: false
+            },
+            { new: true, runValidators: true }
+        );
+
+        // Respond with the updated appointment
+        res.json({ success: true, appointment: updatedAppointment });
 
     } catch (error) {
         console.log(error)

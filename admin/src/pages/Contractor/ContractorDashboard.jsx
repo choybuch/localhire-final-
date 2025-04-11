@@ -9,6 +9,9 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { toast } from 'react-toastify'; // Import toast
 import { v4 as uuidv4 } from 'uuid'; // Import uuidv4
 
+const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_NAME;
+const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
 const ContractorDashboard = () => {
   const { dToken, dashData, getDashData, cancelAppointment, completeAppointment } = useContext(ContractorContext);
   const { slotDateFormat, currency } = useContext(AppContext);
@@ -73,27 +76,34 @@ const ContractorDashboard = () => {
     navigate('/contractor-appointments'); // Navigate to the appointments page
   };
 
-  // Add this function for image upload to Cloudinary
-  const uploadImageToCloudinary = async (file) => {
+  // Cloudinary upload handler
+  const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', 'your_cloudinary_upload_preset');
-
+    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+  
     try {
-      const response = await fetch('https://api.cloudinary.com/v1_1/your_cloud_name/image/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      return data.secure_url;
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error.message || 'Upload failed');
+      }
+      
+      return await response.json();
     } catch (error) {
       console.error('Upload error:', error);
-      return null;
+      throw error; // Rethrow to handle in the calling function
     }
   };
-
   // Modify the complete appointment handler
-  const handleCompleteAppointment = async (appointmentId) => {
+  const handleCompleteAppointment = async () => {
     if (!proofImage) {
       toast.error('Please upload proof of work');
       return;
@@ -101,17 +111,20 @@ const ContractorDashboard = () => {
 
     setUploading(true);
     try {
-      const imageUrl = await uploadImageToCloudinary(proofImage);
-
-      // Call the completeAppointment function with the image URL
-      await completeAppointment(appointmentId, imageUrl);
-
-      setShowCompletionModal(false);
-      setProofImage(null);
-      toast.success('Completion proof submitted for admin approval');
+      const result = await uploadToCloudinary(proofImage);
+      
+      if (result.secure_url) {
+        await completeAppointment(selectedAppointment._id, result.secure_url);
+        setShowCompletionModal(false);
+        setProofImage(null);
+        toast.success('Proof submitted for admin approval!');
+        getDashData(); // Refresh dashboard data
+      } else {
+        throw new Error('Failed to upload image');
+      }
     } catch (error) {
       console.error('Completion error:', error);
-      toast.error('Failed to submit proof');
+      toast.error(error.message);
     }
     setUploading(false);
   };
@@ -228,38 +241,53 @@ const ContractorDashboard = () => {
       )}
       {/* Add this modal component before the return statement's closing </div> */}
       {showCompletionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-96">
-            <h2 className="text-xl font-semibold mb-4">Upload Completion Proof</h2>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setProofImage(e.target.files[0])}
-              className="mb-4"
-            />
-            {proofImage && (
-              <img
-                src={URL.createObjectURL(proofImage)}
-                alt="Preview"
-                className="mb-4 max-h-40 object-contain"
+            <h2 className="text-xl font-semibold mb-4">Submit Work Completion Proof</h2>
+            
+            <label className="block mb-4">
+              <span className="sr-only">Choose proof image</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setProofImage(e.target.files[0])}
+                className="block w-full text-sm text-gray-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-50 file:text-blue-700
+                  hover:file:bg-blue-100"
               />
+            </label>
+
+            {proofImage && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                <img
+                  src={URL.createObjectURL(proofImage)}
+                  alt="Proof preview"
+                  className="max-h-40 w-auto mx-auto rounded"
+                />
+              </div>
             )}
+
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => {
                   setShowCompletionModal(false);
                   setProofImage(null);
                 }}
-                className="px-4 py-2 bg-gray-300 rounded"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
               >
                 Cancel
               </button>
               <button
-                onClick={() => handleCompleteAppointment(selectedAppointment._id)}
+                onClick={handleCompleteAppointment}
                 disabled={uploading}
-                className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-blue-300"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                          disabled:bg-blue-300 disabled:cursor-not-allowed"
               >
-                {uploading ? 'Uploading...' : 'Submit'}
+                {uploading ? 'Submitting...' : 'Submit Proof'}
               </button>
             </div>
           </div>

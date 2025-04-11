@@ -42,4 +42,26 @@ const checkAppointmentStatus = async (req, res) => {
     }
 };
 
-export { checkAppointmentStatus };
+// When contractor submits proof
+const completeAppointment = async (req, res) => {
+    try {
+        const { appointmentId, imageUrl } = req.body;
+
+        const appointment = await appointmentModel.findByIdAndUpdate(
+            appointmentId,
+            {
+                status: 'pending',  // Ensure this field is set
+                proofImage: imageUrl,
+                isCompleted: false,
+                cancelled: false
+            },
+            { new: true }
+        );
+
+        res.json({ success: true, appointment });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export { checkAppointmentStatus, completeAppointment };

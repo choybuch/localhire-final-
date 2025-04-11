@@ -128,6 +128,12 @@ const allContractors = async (req, res) => {
 // API to get dashboard data for admin panel
 const adminDashboard = async (req, res) => {
     try {
+        const pendingApprovals = await appointmentModel.find({
+            status: "pending",
+            proofImage: { $exists: true, $ne: "" }
+        });
+
+        console.log("Fetched pending approvals:", pendingApprovals.length);
 
         const contractors = await contractorModel.find({})
         const users = await userModel.find({})
@@ -137,16 +143,33 @@ const adminDashboard = async (req, res) => {
             contractors: contractors.length,
             appointments: appointments.length,
             patients: users.length,
-            latestAppointments: appointments.reverse()
+            latestAppointments: appointments.reverse(),
+            pendingApprovals: pendingApprovals
         }
 
-        res.json({ success: true, dashData })
-
-    } catch (error) {
-        console.log(error)
-        res.json({ success: false, message: error.message })
+        res.json({ success: true, dashData });
+    } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+        res.status(500).json({ success: false, message: "Server error" });
     }
-}
+};
+
+const pendingApprovals = async (req, res) => {
+    try {
+        const appointments = await appointmentModel.find({ status: 'pending' });
+
+        res.status(200).json({
+            success: true,
+            appointments,
+        });
+    } catch (error) {
+        console.error("Pending Approvals Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching pending approvals",
+        });
+    }
+};
 
 export {
     loginAdmin,
@@ -154,5 +177,6 @@ export {
     appointmentCancel,
     addContractor,
     allContractors,
-    adminDashboard
+    adminDashboard,
+    pendingApprovals // Ensure pendingApprovals is exported
 }

@@ -37,7 +37,7 @@ router.post('/complete', async (req, res) => {
         const updated = await appointmentModel.findByIdAndUpdate(
             appointmentId,
             {
-                status: 'pendingApproval',
+                status: 'pending',
                 proofImage: imageUrl,
                 isCompleted: false
             },
@@ -68,6 +68,41 @@ router.post('/approve-completion', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+router.post('/handle-approval', async (req, res) => {
+    try {
+        const { appointmentId, approved } = req.body;
+
+        const update = approved
+            ? {
+                status: 'completed',
+                isCompleted: true,
+                cancelled: false
+            }
+            : {
+                status: 'cancelled',
+                isCompleted: false,
+                cancelled: true
+            };
+
+        const appointment = await appointmentModel.findByIdAndUpdate(
+            appointmentId,
+            update,
+            { new: true }
+        );
+
+        res.json({
+            success: true,
+            message: `Appointment ${approved ? 'approved' : 'rejected'} successfully`,
+            appointment
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 });
 
