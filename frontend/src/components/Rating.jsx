@@ -135,3 +135,5 @@ const response = await fetch(`/api/appointments/status?appointmentId=${appointme
 };
 
 export default Rating;
+
+
