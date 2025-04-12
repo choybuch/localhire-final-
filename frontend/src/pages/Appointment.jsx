@@ -167,7 +167,7 @@ const Appointment = () => {
 
                 <div className='flex-1 border border-[#ADADAD] rounded-lg p-8 py-7 bg-white'>
                     <p className='text-3xl font-medium text-gray-700'>
-                        {conInfo.name}<img class="w-5" src="assets.verified_check" alt="verified"/>
+                        {conInfo.name}<img class="w-5" src="assets.verified_check" alt=" "/>
                     </p>
                     {/* Rating Display */}
                     {ratingData && (
