@@ -13,8 +13,8 @@ const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_NAME;
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 const ContractorDashboard = () => {
-  const { dToken, dashData, getDashData, cancelAppointment, completeAppointment } = useContext(ContractorContext);
-  const { slotDateFormat, currency } = useContext(AppContext);
+  const { dToken, dashData, getDashData } = useContext(ContractorContext);
+  const { slotDateFormat, currency, backendUrl } = useContext(AppContext); // Get backendUrl from AppContext
 
   const [currentChat, setCurrentChat] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
@@ -100,6 +100,33 @@ const ContractorDashboard = () => {
     } catch (error) {
       console.error('Upload error:', error);
       throw error; // Rethrow to handle in the calling function
+    }
+  };
+
+  const completeAppointment = async (appointmentId, imageUrl) => {
+    try {
+      const response = await fetch(backendUrl + '/api/contractor/complete-appointment', { // Use backendUrl and correct endpoint
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'dToken': dToken // Use dToken
+        },
+        body: JSON.stringify({ appointmentId, imageUrl })
+      });
+
+      if (!response.ok) {
+        // Handle non-2xx responses
+        const errorText = await response.text();
+        throw new Error(`HTTP error! Status: ${response.status}, ${errorText}`);
+      }
+
+      const data = await response.json(); // Parse the JSON response
+
+      return data; // Return the parsed data
+
+    } catch (error) {
+      console.error("Error completing appointment:", error);
+      throw error; // Re-throw the error to be handled by the calling function
     }
   };
   // Modify the complete appointment handler

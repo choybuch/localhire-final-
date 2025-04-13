@@ -3,6 +3,7 @@ import { loginContractor, appointmentsContractor, appointmentCancel, contractorL
 import authContractor from '../middleware/authContractor.js';
 import upload from '../middleware/multer.js'; // Import multer
 import appointmentModel from '../models/appointmentModel.js'; // Import appointment model
+import { v2 as cloudinary } from 'cloudinary';
 
 const contractorRouter = express.Router();
 
@@ -21,15 +22,31 @@ contractorRouter.post('/submit-proof',
     upload.single('proofImage'), // Using same multer config as profile
     authContractor,
     async (req, res) => {
+        console.log("➡️ SUBMIT PROOF ROUTE HIT");
+        console.log("Appointment ID:", req.body.appointmentId);
+        console.log("Uploaded file path:", req.file?.path);
+
         try {
+            if (!req.file?.path) {
+                return res.status(400).json({ success: false, message: "No file uploaded" });
+            }
+
+            const cloudResult = await cloudinary.uploader.upload(req.file.path, {
+                folder: 'proofImages'
+            });
+
+            console.log("Cloudinary secure_url:", cloudResult.secure_url);
+
             const appointment = await appointmentModel.findByIdAndUpdate(
                 req.body.appointmentId,
                 {
-                    proofImage: req.file?.path || "",
-                    status: "pending" // Changed to "pending" to match the intended status
+                    proofImage: cloudResult.secure_url, // This is what the dashboard expects
+                    status: "pending"
                 },
                 { new: true }
             );
+
+            console.log("Updated appointment:", appointment);
 
             res.status(200).json({
                 success: true,
@@ -37,7 +54,8 @@ contractorRouter.post('/submit-proof',
                 appointment
             });
         } catch (error) {
-            res.status(400).json({ success: false, message: error.message });
+            console.error("Upload error:", error);
+            res.status(500).json({ success: false, message: error.message });
         }
     }
 );

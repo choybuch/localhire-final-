@@ -27,6 +27,7 @@ adminRouter.get("/all-contractors", authAdmin, allContractors);
 adminRouter.post("/change-availability", authAdmin, changeAvailablity);
 adminRouter.get("/dashboard", authAdmin, adminDashboard);
 
+
 adminRouter.post('/handle-approval', authAdmin, async (req, res) => {
     try {
         const appointment = await appointmentModel.findByIdAndUpdate(

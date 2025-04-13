@@ -9,6 +9,7 @@ import adminRouter from "./routes/adminRoute.js"
 import reportRoutes from "./routes/reportRoute.js";
 import appointmentRoutes from './routes/appointment.js';
 
+
 // app config
 const app = express()
 const port = process.env.PORT || 4000
