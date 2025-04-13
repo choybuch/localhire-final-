@@ -36,7 +36,6 @@ import mechanic from './mechanic.svg'
 import cleaning from './cleaning.svg'
 import household from './household.svg'
 import technician from './technician.svg'
-import transport from './transport.svg'
 import electrician from './electrician.svg'
 
 
@@ -78,10 +77,6 @@ export const specialityData = [
     {
         speciality: 'Electric Services', //Pediatrician
         image: electrician         //Pediatrician
-    },
-    {
-        speciality: 'Transport Logistics Services', //Neurologist
-        image: transport         //Neurologist
     },
     {
         speciality: 'Cleaning Services', //Gastroenterologist
