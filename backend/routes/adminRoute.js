@@ -6,12 +6,14 @@ import {
     addContractor,
     allContractors,
     adminDashboard,
-    pendingApprovals // Add this import
+    pendingApprovals, // Add this import
+    getUserDetails
 } from '../controllers/adminController.js';
 import { changeAvailablity } from '../controllers/ContractorController.js';
 import authAdmin from '../middleware/authAdmin.js';
 import upload from '../middleware/multer.js';
 import appointmentModel from '../models/appointmentModel.js';
+import userModel from '../models/userModel.js';
 
 const adminRouter = express.Router();
 
@@ -26,7 +28,6 @@ adminRouter.post("/cancel-appointment", authAdmin, appointmentCancel);
 adminRouter.get("/all-contractors", authAdmin, allContractors);
 adminRouter.post("/change-availability", authAdmin, changeAvailablity);
 adminRouter.get("/dashboard", authAdmin, adminDashboard);
-
 
 adminRouter.post('/handle-approval', authAdmin, async (req, res) => {
     try {
@@ -48,5 +49,31 @@ adminRouter.post('/handle-approval', authAdmin, async (req, res) => {
         res.status(400).json({ success: false, message: error.message });
     }
 });
+
+adminRouter.get('/users', authAdmin, async (req, res) => {
+    const { search } = req.query;
+
+    if (!search) {
+        return res.status(400).json({ success: false, message: "Search query missing" });
+    }
+
+    try {
+        const regex = new RegExp(search, 'i'); // case-insensitive search
+        const users = await userModel.find({
+            $or: [
+                { name: regex },
+                { email: regex },
+                { phone: regex }
+            ]
+        });
+
+        res.json(users);
+    } catch (error) {
+        console.error("User search error:", error);
+        res.status(500).json({ success: false, message: "Error searching users" });
+    }
+});
+
+adminRouter.get('/users/:userId/details', authAdmin, getUserDetails);
 
 export default adminRouter;

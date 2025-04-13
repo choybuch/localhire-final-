@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { assets } from '../assets/assets';
 import Report from '../components/Report';
+import ContractorSignup from '../components/ContractorSignup'; // Import ContractorSignup
 
 const Contact = () => {
   const [showReport, setShowReport] = useState(false);
+  const [showContractorSignup, setShowContractorSignup] = useState(false); // New state
 
   return (
     <div>
@@ -19,6 +21,16 @@ const Contact = () => {
           <p className=' text-gray-500'>Tel: (415) 555-0132 <br /> Email: localhireph@gmail.com</p>
           <p className=' font-semibold text-lg text-gray-600'>NEED HELP?</p>
           <p className=' text-gray-500'>Report any problems or issues you're experiencing.</p>
+
+          {/* Contractor Signup Button */}
+          <button
+            className='border border-black px-8 py-4 text-sm hover:bg-black hover:text-white transition-all duration-500'
+            onClick={() => setShowContractorSignup(true)}
+          >
+            Contractor Sign Up
+          </button>
+
+          {/* Report a Problem Button */}
           <button
             className='border border-black px-8 py-4 text-sm hover:bg-black hover:text-white transition-all duration-500'
             onClick={() => setShowReport(true)}
@@ -29,6 +41,7 @@ const Contact = () => {
       </div>
 
       {showReport && <Report />}
+      {showContractorSignup && <ContractorSignup />} {/* Render ContractorSignup conditionally */}
     </div>
   );
 };

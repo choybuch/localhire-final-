@@ -171,6 +171,32 @@ const pendingApprovals = async (req, res) => {
     }
 };
 
+// new
+const getUserDetails = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const user = await userModel.findById(userId);
+
+        const allAppointments = await appointmentModel
+            .find({ userId })
+            .sort({ date: -1 }); // latest first
+
+        const current = allAppointments.find(a => a.status === 'confirmed' && !a.cancelled);
+        const last = allAppointments.find(a => a.status === 'completed');
+
+        res.json({
+            success: true,
+            user,
+            totalAppointments: allAppointments.length,
+            currentContractor: current?.conData || null,
+            lastContractor: last?.conData || null
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Failed to fetch user details' });
+    }
+};
+
 export {
     loginAdmin,
     appointmentsAdmin,
@@ -178,5 +204,6 @@ export {
     addContractor,
     allContractors,
     adminDashboard,
-    pendingApprovals // Ensure pendingApprovals is exported
+    pendingApprovals,
+    getUserDetails // Ensure pendingApprovals is exported
 }
