@@ -15,21 +15,17 @@ const AppContextProvider = (props) => {
 
     // Getting Contractors using API
     const getContractorsData = async () => {
-
         try {
-
-            const { data } = await axios.get(backendUrl + '/api/contractor/list')
+            const { data } = await axios.get(`${backendUrl}/api/contractors/list`) // Updated endpoint
             if (data.success) {
                 setContractors(data.contractors)
             } else {
                 toast.error(data.message)
             }
-
         } catch (error) {
             console.log(error)
             toast.error(error.message)
         }
-
     }
 
     // Getting User Profile using API

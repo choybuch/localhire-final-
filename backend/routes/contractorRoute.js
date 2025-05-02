@@ -1,11 +1,24 @@
 import express from 'express';
-import { loginContractor, appointmentsContractor, appointmentCancel, contractorList, changeAvailablity, appointmentComplete, contractorDashboard, contractorProfile, updateContractorProfile } from '../controllers/ContractorController.js';
+import { loginContractor, appointmentsContractor, appointmentCancel, contractorList, changeAvailablity, appointmentComplete, contractorDashboard, contractorProfile, updateContractorProfile, addContractorFrontend } from '../controllers/ContractorController.js';
 import authContractor from '../middleware/authContractor.js';
 import upload from '../middleware/multer.js'; // Import multer
 import appointmentModel from '../models/appointmentModel.js'; // Import appointment model
 import { v2 as cloudinary } from 'cloudinary';
+import multer from 'multer';
+import path from 'path';
 
 const contractorRouter = express.Router();
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/contractors');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+const uploadContractor = multer({ storage: storage });
 
 contractorRouter.post("/login", loginContractor)
 contractorRouter.post("/cancel-appointment", authContractor, appointmentCancel)
@@ -59,5 +72,7 @@ contractorRouter.post('/submit-proof',
         }
     }
 );
+
+contractorRouter.post("/add-contractor", uploadContractor.single('image'), addContractorFrontend);
 
 export default contractorRouter;

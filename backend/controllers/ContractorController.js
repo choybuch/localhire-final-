@@ -2,6 +2,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import contractorModel from "../models/contractorModel.js";
 import appointmentModel from "../models/appointmentModel.js";
+import validator from "validator";
+import { v2 as cloudinary } from "cloudinary";
 
 // API for contractor Login 
 const loginContractor = async (req, res) => {
@@ -221,6 +223,61 @@ const contractorDashboard = async (req, res) => {
     }
 }
 
+const addContractorFrontend = async (req, res) => {
+    try {
+        const { name, email, password, speciality, degree, experience, about, fees, address } = req.body;
+        const imageFile = req.file;
+
+        // Input validation
+        if (!name || !email || !password || !speciality || !degree || !experience || !about || !fees || !address) {
+            return res.json({ success: false, message: "Missing Details" });
+        }
+
+        // Email validation
+        if (!validator.isEmail(email)) {
+            return res.json({ success: false, message: "Please enter a valid email" });
+        }
+
+        // Password validation
+        if (password.length < 8) {
+            return res.json({ success: false, message: "Please enter a strong password" });
+        }
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Upload image to cloudinary
+        const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: "image" });
+        const imageUrl = imageUpload.secure_url;
+
+        // Create contractor data object
+        const contractorData = {
+            name,
+            email,
+            image: imageUrl,
+            password: hashedPassword,
+            speciality,
+            degree,
+            experience,
+            about,
+            fees,
+            address: JSON.parse(address),
+            date: Date.now()
+        };
+
+        // Save to database
+        const newContractor = new contractorModel(contractorData);
+        await newContractor.save();
+        
+        res.json({ success: true, message: 'Contractor Added' });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
 export {
     loginContractor,
     appointmentsContractor,
@@ -230,5 +287,6 @@ export {
     appointmentComplete,
     contractorDashboard,
     contractorProfile,
-    updateContractorProfile
+    updateContractorProfile,
+    addContractorFrontend
 }

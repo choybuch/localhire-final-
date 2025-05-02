@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { assets } from '../assets/assets';
 import Report from '../components/Report';
-import ContractorSignup from '../components/ContractorSignup'; // Import ContractorSignup
+import { useNavigate } from 'react-router-dom'; // Add this import
 
 const Contact = () => {
   const [showReport, setShowReport] = useState(false);
-  const [showContractorSignup, setShowContractorSignup] = useState(false); // New state
+  const navigate = useNavigate(); // Add this
 
   return (
     <div>
@@ -25,7 +25,7 @@ const Contact = () => {
           {/* Contractor Signup Button */}
           <button
             className='border border-black px-8 py-4 text-sm hover:bg-black hover:text-white transition-all duration-500'
-            onClick={() => setShowContractorSignup(true)}
+            onClick={() => navigate('/add-contractor')} // Changed this line
           >
             Contractor Sign Up
           </button>
@@ -41,7 +41,6 @@ const Contact = () => {
       </div>
 
       {showReport && <Report />}
-      {showContractorSignup && <ContractorSignup />} {/* Render ContractorSignup conditionally */}
     </div>
   );
 };

@@ -10,11 +10,12 @@ import Appointment from './pages/Appointment'
 import MyAppointments from './pages/MyAppointments'
 import MyProfile from './pages/MyProfile'
 import Footer from './components/Footer'
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import Verify from './pages/Verify'
-import PrivacyPolicy from './pages/PrivacyPolicy'; // Import PrivacyPolicy
-import Terms from './pages/Terms';
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import Terms from './pages/Terms'
+import AddContractor from './pages/AddContractor'
 
 const App = () => {
   return (
@@ -32,8 +33,9 @@ const App = () => {
         <Route path='/my-appointments' element={<MyAppointments />} />
         <Route path='/my-profile' element={<MyProfile />} />
         <Route path='/verify' element={<Verify />} />
-        <Route path='/privacy-policy' element={<PrivacyPolicy />} /> {/* Add PrivacyPolicy route */}
-        <Route path='/terms-and-conditions' element={<Terms />} /> {/* Add Terms route */}
+        <Route path='/privacy-policy' element={<PrivacyPolicy />} />
+        <Route path='/terms-and-conditions' element={<Terms />} />
+        <Route path='/add-contractor' element={<AddContractor />} />
       </Routes>
       <Footer />
     </div>

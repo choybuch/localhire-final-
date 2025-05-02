@@ -23,8 +23,6 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage: storage });
-
 router.post('/contractor-signup', upload.fields([{ name: 'proofFile', maxCount: 1 }, { name: 'govIdFile', maxCount: 1 }]), async (req, res) => {
     console.log("FILES RECEIVED:", req.files);
     console.log("BODY RECEIVED:", req.body);
