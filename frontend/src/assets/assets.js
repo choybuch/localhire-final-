@@ -48,7 +48,7 @@ export const assets = {
     info_icon,
     profile_pic,
     arrow_icon,
-    contact_image,
+    contact_pic,
     about_image,
     menu_icon,
     cross_icon,
