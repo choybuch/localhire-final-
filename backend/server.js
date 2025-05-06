@@ -29,29 +29,26 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function(origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
         }
-        return callback(null, true);
     },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-        'Content-Type', 
-        'Authorization', 
-        'token',
-        'atoken'  // Add atoken to allowed headers
-    ],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    credentials: true
+    allowedHeaders: ['Content-Type', 'Authorization', 'dtoken']
 }));
+
+// Add OPTIONS handling for preflight requests
+app.options('*', cors());
 
 // Add logging middleware to debug headers
 app.use((req, res, next) => {
-    console.log('Request headers:', req.headers);
+    console.log(`${req.method} ${req.url}`, {
+        origin: req.headers.origin,
+        headers: req.headers
+    });
     next();
 });
 
