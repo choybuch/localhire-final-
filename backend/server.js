@@ -18,8 +18,25 @@ connectCloudinary()
 
 // middlewares
 app.use(express.json())
+
+// Update CORS configuration to allow both frontend and admin origins
+const allowedOrigins = [
+    'https://localhire-final.vercel.app',
+    'https://localhire-final-admin.vercel.app',
+    'http://localhost:5173'
+];
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: function(origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'token'],
     credentials: true
