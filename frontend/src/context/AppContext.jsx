@@ -16,15 +16,13 @@ const AppContextProvider = (props) => {
     // Getting Contractors using API
     const getContractorsData = async () => {
         try {
-            const { data } = await axios.get(`${backendUrl}/api/contractors/list`) // Updated endpoint
+            const { data } = await axios.get(`${backendUrl}/api/contractor/list`); // Note: contractor (singular)
             if (data.success) {
-                setContractors(data.contractors)
-            } else {
-                toast.error(data.message)
+                setContractors(data.contractors);
             }
         } catch (error) {
-            console.log(error)
-            toast.error(error.message)
+            console.error('Error fetching contractors:', error);
+            toast.error('Failed to fetch contractors');
         }
     }
 
@@ -50,20 +48,33 @@ const AppContextProvider = (props) => {
 
     const getUserAppointments = async () => {
         try {
-            const { data } = await axios.get(
+            console.log('Fetching appointments from:', `${backendUrl}/api/user/appointments`);
+            console.log('Using token:', token);
+
+            const response = await axios.get(
                 `${backendUrl}/api/user/appointments`,
                 {
                     headers: { 
-                        token,
+                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json'
-                    },
-                    withCredentials: true
+                    }
                 }
             );
-            setAppointments(data.appointments.reverse());
+
+            console.log('Appointments response:', response);
+
+            if (response.data.success) {
+                setAppointments(response.data.appointments.reverse());
+            } else {
+                toast.error(response.data.message || 'Failed to fetch appointments');
+            }
         } catch (error) {
-            console.error('Error fetching appointments:', error);
-            toast.error(error.response?.data?.message || 'Error fetching appointments');
+            console.error('Appointment fetch error:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
+            toast.error('Error fetching appointments');
         }
     };
 

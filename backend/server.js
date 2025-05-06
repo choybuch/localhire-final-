@@ -42,12 +42,28 @@ app.get("/", (req, res) => {
   res.send("API Working")
 });
 
+// Add this before your error handlers
+app.get('/api/contractor/test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Contractor API is accessible'
+    });
+});
+
 // Add error handling middleware
+app.use((req, res) => {
+    console.log(`404: ${req.method} ${req.url} not found`);
+    res.status(404).json({
+        success: false,
+        message: 'Route not found'
+    });
+});
+
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ 
-        success: false, 
-        message: 'Internal Server Error' 
+    console.error('Server error:', err);
+    res.status(500).json({
+        success: false,
+        message: 'Internal server error'
     });
 });
 

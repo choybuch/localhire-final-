@@ -125,18 +125,20 @@ const appointmentComplete = async (req, res) => {
 // API to get all contractors list for Frontend
 const contractorList = async (req, res) => {
     try {
-        // Modified query to handle both old and new contractors
-        const contractors = await contractorModel.find({
-            $or: [
-                { isApproved: true }, // New contractors that are approved
-                { isApproved: { $exists: false } } // Old contractors without approval field
-            ]
-        }).select('-password -email');
+        console.log('Fetching contractor list');
+        const contractors = await contractorModel.find({});
+        console.log(`Found ${contractors.length} contractors`);
         
-        res.json({ success: true, contractors });
+        res.json({
+            success: true,
+            contractors
+        });
     } catch (error) {
-        console.error("Error fetching contractors:", error);
-        res.json({ success: false, message: error.message });
+        console.error('Error in contractorList:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };
 
