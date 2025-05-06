@@ -38,9 +38,21 @@ app.use(cors({
         return callback(null, true);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'token'],
+    allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'token',
+        'atoken'  // Add atoken to allowed headers
+    ],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
     credentials: true
 }));
+
+// Add logging middleware to debug headers
+app.use((req, res, next) => {
+    console.log('Request headers:', req.headers);
+    next();
+});
 
 // Ensure JSON content type for API responses
 app.use('/api/*', (req, res, next) => {
