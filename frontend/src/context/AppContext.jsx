@@ -48,6 +48,25 @@ const AppContextProvider = (props) => {
 
     }
 
+    const getUserAppointments = async () => {
+        try {
+            const { data } = await axios.get(
+                `${backendUrl}/api/user/appointments`,
+                {
+                    headers: { 
+                        token,
+                        'Content-Type': 'application/json'
+                    },
+                    withCredentials: true
+                }
+            );
+            setAppointments(data.appointments.reverse());
+        } catch (error) {
+            console.error('Error fetching appointments:', error);
+            toast.error(error.response?.data?.message || 'Error fetching appointments');
+        }
+    };
+
     useEffect(() => {
         getContractorsData()
     }, [])
