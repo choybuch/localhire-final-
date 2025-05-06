@@ -1,13 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { AppContext } from "../context/AppContext";
 import { db } from "../firebase";
 import { doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
 import { toast } from 'react-toastify';
 
 const Rating = ({ contractorId, userId, appointmentId }) => {
+    const { backendUrl } = useContext(AppContext); // Add AppContext
     const [rating, setRating] = useState(0);
     const [showRatingModal, setShowRatingModal] = useState(false);
     const [hasCompletedAppointment, setHasCompletedAppointment] = useState(false);
-    const [hasRated, setHasRated] = useState(false); // New state
+    const [hasRated, setHasRated] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const checkAppointmentCompletion = async () => {
@@ -17,36 +20,40 @@ const Rating = ({ contractorId, userId, appointmentId }) => {
             }
     
             try {
-                // In Rating.jsx's useEffect, modify the fetch URL
-const response = await fetch(`/api/appointments/status?appointmentId=${appointmentId}&userId=${userId}&contractorId=${contractorId}`);
+                setIsLoading(true);
+                const response = await fetch(
+                    `${backendUrl}/api/appointments/status?appointmentId=${appointmentId}&userId=${userId}&contractorId=${contractorId}`,
+                    {
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
 
+                console.log('Response from backend:', response.status);
                 
-                const contentType = response.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    const text = await response.text();
-                    console.error("Unexpected response:", text);
-                    throw new Error("Response is not JSON");
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
-    
                 console.log("Fetched appointment data:", data);
     
                 if (data.isCompleted === true) {
                     setHasCompletedAppointment(true);
-                } else {
-                    setHasCompletedAppointment(false);
                 }
-                setHasRated(data.hasBeenRated); // Add this line
+                setHasRated(data.hasBeenRated);
             } catch (error) {
                 console.error("Error checking appointment completion:", error);
+                toast.error("Error checking appointment status");
+            } finally {
+                setIsLoading(false);
             }
         };
     
         checkAppointmentCompletion();
-    }, [userId, contractorId, appointmentId]);
-    
-    
+    }, [userId, contractorId, appointmentId, backendUrl]);
 
     const submitRating = async () => {
         if (rating === 0) {
@@ -60,31 +67,24 @@ const response = await fetch(`/api/appointments/status?appointmentId=${appointme
         }
     
         try {
-            console.log('Submitting rating:', {
-                contractorId,
-                rating,
-                appointmentId
-            });
-    
+            // Update Firebase rating
             const ratingRef = doc(db, "ratings", contractorId);
             const ratingSnap = await getDoc(ratingRef);
     
             if (ratingSnap.exists()) {
-                console.log('Updating existing rating doc');
                 await updateDoc(ratingRef, {
                     totalRating: increment(rating),
                     totalReviews: increment(1)
                 });
             } else {
-                console.log('Creating new rating doc');
                 await setDoc(ratingRef, {
                     totalRating: rating,
                     totalReviews: 1
                 });
             }
     
-            // Mark appointment as rated
-            const response = await fetch("/api/appointments/mark-rated", {
+            // Update backend
+            const response = await fetch(`${backendUrl}/api/appointments/mark-rated`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json"
@@ -109,8 +109,10 @@ const response = await fetch(`/api/appointments/status?appointmentId=${appointme
             toast.error("Failed to submit rating. Please try again.");
         }
     };
-    
-    
+
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <>

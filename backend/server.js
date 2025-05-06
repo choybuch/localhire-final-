@@ -18,7 +18,16 @@ connectCloudinary()
 
 // middlewares
 app.use(express.json())
-app.use(cors())
+app.use(cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    credentials: true
+}));
+
+// Ensure JSON content type for API responses
+app.use('/api/*', (req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    next();
+});
 
 // api endpoints
 app.use("/api/user", userRouter)
