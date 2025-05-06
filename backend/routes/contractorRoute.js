@@ -1,24 +1,41 @@
 import express from 'express';
-import { loginContractor, appointmentsContractor, appointmentCancel, contractorList, changeAvailablity, appointmentComplete, contractorDashboard, contractorProfile, updateContractorProfile, addContractorFrontend } from '../controllers/ContractorController.js';
+import pkg from 'cloudinary';
+const { v2: cloudinary } = pkg;
+import { loginContractor, appointmentsContractor, appointmentCancel, contractorList, 
+         changeAvailablity, appointmentComplete, contractorDashboard, contractorProfile, 
+         updateContractorProfile, addContractorFrontend } from '../controllers/ContractorController.js';
 import authContractor from '../middleware/authContractor.js';
-import upload from '../middleware/multer.js'; // Import multer
-import appointmentModel from '../models/appointmentModel.js'; // Import appointment model
-import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
-import path from 'path';
 
 const contractorRouter = express.Router();
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/contractors');
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET_KEY
 });
 
-const uploadContractor = multer({ storage: storage });
+// Configure Cloudinary storage
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'contractors',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }]
+  }
+});
+
+// Configure multer for multiple file uploads
+const uploadContractor = multer({ storage });
+
+// Handle multiple file uploads with specific field names
+contractorRouter.post('/add-contractor', uploadContractor.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'govId', maxCount: 1 },
+  { name: 'proofDoc', maxCount: 1 }
+]), addContractorFrontend);
 
 contractorRouter.post("/login", loginContractor)
 contractorRouter.post("/cancel-appointment", authContractor, appointmentCancel)
@@ -32,7 +49,7 @@ contractorRouter.post("/update-profile", authContractor, updateContractorProfile
 
 // New route for submitting proof of completion
 contractorRouter.post('/submit-proof',
-    upload.single('proofImage'), // Using same multer config as profile
+    uploadContractor.single('proofImage'), // Changed from upload to uploadContractor
     authContractor,
     async (req, res) => {
         console.log("➡️ SUBMIT PROOF ROUTE HIT");
@@ -44,6 +61,7 @@ contractorRouter.post('/submit-proof',
                 return res.status(400).json({ success: false, message: "No file uploaded" });
             }
 
+            // Using the same Cloudinary configuration
             const cloudResult = await cloudinary.uploader.upload(req.file.path, {
                 folder: 'proofImages'
             });
@@ -53,7 +71,7 @@ contractorRouter.post('/submit-proof',
             const appointment = await appointmentModel.findByIdAndUpdate(
                 req.body.appointmentId,
                 {
-                    proofImage: cloudResult.secure_url, // This is what the dashboard expects
+                    proofImage: cloudResult.secure_url,
                     status: "pending"
                 },
                 { new: true }
@@ -72,7 +90,5 @@ contractorRouter.post('/submit-proof',
         }
     }
 );
-
-contractorRouter.post("/add-contractor", uploadContractor.single('image'), addContractorFrontend);
 
 export default contractorRouter;

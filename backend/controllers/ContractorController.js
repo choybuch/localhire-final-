@@ -3,7 +3,8 @@ import bcrypt from "bcrypt";
 import contractorModel from "../models/contractorModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import validator from "validator";
-import { v2 as cloudinary } from "cloudinary";
+import pkg from 'cloudinary';
+const { v2: cloudinary } = pkg;
 
 // API for contractor Login 
 const loginContractor = async (req, res) => {
@@ -37,7 +38,7 @@ const loginContractor = async (req, res) => {
 const appointmentsContractor = async (req, res) => {
     try {
 
-        const { conId } = req.body
+        const { conId } = req.conId;
         const appointments = await appointmentModel.find({ conId })
 
         res.json({ success: true, appointments })
@@ -124,16 +125,20 @@ const appointmentComplete = async (req, res) => {
 // API to get all contractors list for Frontend
 const contractorList = async (req, res) => {
     try {
-
-        const contractors = await contractorModel.find({}).select(['-password', '-email'])
-        res.json({ success: true, contractors })
-
+        // Modified query to handle both old and new contractors
+        const contractors = await contractorModel.find({
+            $or: [
+                { isApproved: true }, // New contractors that are approved
+                { isApproved: { $exists: false } } // Old contractors without approval field
+            ]
+        }).select('-password -email');
+        
+        res.json({ success: true, contractors });
     } catch (error) {
-        console.log(error)
-        res.json({ success: false, message: error.message })
+        console.error("Error fetching contractors:", error);
+        res.json({ success: false, message: error.message });
     }
-
-}
+};
 
 // API to change contractor availablity for Admin and Contractor Panel
 const changeAvailablity = async (req, res) => {
@@ -223,46 +228,45 @@ const contractorDashboard = async (req, res) => {
     }
 }
 
-const addContractorFrontend = async (req, res) => {
+export const addContractorFrontend = async (req, res) => {
     try {
         const { name, email, password, speciality, degree, experience, about, fees, address } = req.body;
-        const imageFile = req.file;
-
-        // Input validation
-        if (!name || !email || !password || !speciality || !degree || !experience || !about || !fees || !address) {
-            return res.json({ success: false, message: "Missing Details" });
+        
+        // Validate required fields
+        if (!name || !email || !password || !speciality || !degree || !experience || !fees || !req.files) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Missing required fields' 
+            });
         }
 
-        // Email validation
-        if (!validator.isEmail(email)) {
-            return res.json({ success: false, message: "Please enter a valid email" });
-        }
-
-        // Password validation
-        if (password.length < 8) {
-            return res.json({ success: false, message: "Please enter a strong password" });
+        // Check if files were uploaded
+        if (!req.files.image || !req.files.govId || !req.files.proofDoc) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'All documents are required' 
+            });
         }
 
         // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Upload image to cloudinary
-        const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: "image" });
-        const imageUrl = imageUpload.secure_url;
-
         // Create contractor data object
         const contractorData = {
             name,
             email,
-            image: imageUrl,
             password: hashedPassword,
+            image: req.files.image[0].path,
+            govId: req.files.govId[0].path,
+            proofDoc: req.files.proofDoc[0].path,
             speciality,
             degree,
             experience,
             about,
-            fees,
+            fees: Number(fees),
             address: JSON.parse(address),
+            isApproved: false,
             date: Date.now()
         };
 
@@ -270,10 +274,29 @@ const addContractorFrontend = async (req, res) => {
         const newContractor = new contractorModel(contractorData);
         await newContractor.save();
         
-        res.json({ success: true, message: 'Contractor Added' });
+        res.status(200).json({ 
+            success: true, 
+            message: 'Registration submitted for approval' 
+        });
 
     } catch (error) {
-        console.log(error);
+        console.error('Contractor registration error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Internal server error' 
+        });
+    }
+};
+
+export const approveContractor = async (req, res) => {
+    try {
+        const { contractorId } = req.body;
+        await contractorModel.findByIdAndUpdate(contractorId, {
+            isApproved: true,
+            approvalDate: Date.now()
+        });
+        res.json({ success: true, message: 'Contractor approved successfully' });
+    } catch (error) {
         res.json({ success: false, message: error.message });
     }
 };
@@ -287,6 +310,5 @@ export {
     appointmentComplete,
     contractorDashboard,
     contractorProfile,
-    updateContractorProfile,
-    addContractorFrontend
+    updateContractorProfile
 }

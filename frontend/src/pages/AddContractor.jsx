@@ -17,6 +17,8 @@ const AddContractor = () => {
     const [degree, setDegree] = useState('')
     const [address1, setAddress1] = useState('')
     const [address2, setAddress2] = useState('')
+    const [govId, setGovId] = useState(null)
+    const [proofDoc, setProofDoc] = useState(null)
 
     const { backendUrl } = useContext(AppContext)
 
@@ -24,12 +26,14 @@ const AddContractor = () => {
         event.preventDefault()
 
         try {
-            if (!conImg) {
-                return toast.error('Image Not Selected')
+            if (!conImg || !govId || !proofDoc) {
+                return toast.error('Please upload all required documents')
             }
 
             const formData = new FormData();
             formData.append('image', conImg, conImg.name)
+            formData.append('govId', govId, govId.name)
+            formData.append('proofDoc', proofDoc, proofDoc.name)
             formData.append('name', name)
             formData.append('email', email)
             formData.append('password', password)
@@ -56,7 +60,7 @@ const AddContractor = () => {
             )
 
             if (data.success) {
-                toast.success(data.message)
+                toast.success('Registration submitted for approval')
                 // Reset form
                 setConImg(false)
                 setName('')
@@ -190,7 +194,35 @@ const AddContractor = () => {
                     <textarea onChange={e => setAbout(e.target.value)} value={about} className='w-full px-4 pt-2 border rounded' rows={5} placeholder='write about service provider'></textarea>
                 </div>
 
-                <button type='submit' className='bg-primary px-10 py-3 mt-4 text-white rounded-full'>Add professional</button>
+                <div className='flex gap-4 mt-4'>
+                    <div className='flex-1'>
+                        <p className='mb-2'>Government ID</p>
+                        <label className='border rounded p-3 cursor-pointer block'>
+                            <input 
+                                type="file"
+                                accept="image/*,.pdf"
+                                onChange={(e) => setGovId(e.target.files[0])}
+                                hidden
+                            />
+                            {govId ? govId.name : 'Upload Government ID'}
+                        </label>
+                    </div>
+
+                    <div className='flex-1'>
+                        <p className='mb-2'>Proof of Profession</p>
+                        <label className='border rounded p-3 cursor-pointer block'>
+                            <input 
+                                type="file"
+                                accept="image/*,.pdf"
+                                onChange={(e) => setProofDoc(e.target.files[0])}
+                                hidden
+                            />
+                            {proofDoc ? proofDoc.name : 'Upload Certificate/License'}
+                        </label>
+                    </div>
+                </div>
+
+                <button type='submit' className='bg-primary px-10 py-3 mt-4 text-white rounded-full'>Register</button>
 
             </div>
 

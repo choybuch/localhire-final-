@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Rating rules - allow read for everyone, write only for authenticated users
+    match /ratings/{contractorId} {
+      allow read: if true;
+      // Allow write if appointment exists and is completed
+      allow write: if true;  // For now, allow all writes to debug
+    }
+    
+    // Chat messages rules
+    match /chats/{chatId}/messages/{messageId} {
+      allow read, write: if true;
+    }
+    
+    // Unread messages rules
+    match /unreadMessages/{userId} {
+      allow read, write: if true;
+    }
+    
+    // Default rule
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

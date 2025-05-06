@@ -36,19 +36,17 @@ const Appointment = () => {
         }
     }, [conInfo]);
 
-    const getAvailableSlots = async () => {
-        if (!conInfo || !conInfo.slots_booked) return;
+    const getAvailableSlots = () => {
+        if (!conInfo) return;
 
-        setConSlots([]);
-
+        let newSlots = []; // Create a temporary array instead of directly updating state
         let today = new Date();
 
         for (let i = 0; i < 30; i++) {
             let currentDate = new Date(today);
             currentDate.setDate(today.getDate() + i);
             
-            let endTime = new Date(today);
-            endTime.setDate(today.getDate() + i);
+            let endTime = new Date(currentDate);
             endTime.setHours(21, 0, 0, 0);
 
             if (today.getDate() === currentDate.getDate()) {
@@ -62,54 +60,72 @@ const Appointment = () => {
             let timeSlots = [];
 
             while (currentDate < endTime) {
-                let formattedTime = currentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                let formattedTime = currentDate.toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
 
                 let day = currentDate.getDate();
-                let month = currentDate.getMonth() + 0;
+                let month = currentDate.getMonth();
                 let year = currentDate.getFullYear();
 
                 const slotDate = `${day}_${month}_${year}`;
-                const slotTime = formattedTime;
 
-                const isSlotAvailable = !conInfo.slots_booked[slotDate]?.includes(slotTime);
+                // Initialize slots_booked if it doesn't exist
+                const bookedSlots = conInfo.slots_booked || {};
+                const isSlotAvailable = !bookedSlots[slotDate]?.includes(formattedTime);
 
                 if (isSlotAvailable) {
-                    timeSlots.push({ datetime: new Date(currentDate), time: formattedTime });
+                    timeSlots.push({
+                        datetime: new Date(currentDate),
+                        time: formattedTime
+                    });
                 }
 
                 currentDate.setMinutes(currentDate.getMinutes() + 30);
             }
 
-            setConSlots((prev) => [...prev, timeSlots]);
+            if (timeSlots.length > 0) {
+                newSlots.push(timeSlots);
+            }
         }
+
+        setConSlots(newSlots); // Update state once with all slots
     };
 
     const bookAppointment = async () => {
-        if (!token) {
-            toast.warning('Login to book an appointment');
-            return navigate('/login');
-        }
-
-        const date = conSlots[slotIndex][0]?.datetime;
-
-        if (!date) {
-            toast.error('Please select a valid slot.');
-            return;
-        }
-
-        let day = date.getDate();
-        let month = date.getMonth() + 0;
-        let year = date.getFullYear();
-
-        const slotDate = `${day}_${month}_${year}`;
-
         try {
+            if (!token) {
+                toast.warning('Login to book an appointment');
+                return navigate('/login');
+            }
+    
+            // Check if slots and time are selected
+            if (!conSlots[slotIndex] || !conSlots[slotIndex][0]) {
+                toast.error('Please select a valid date');
+                return;
+            }
+    
+            if (!slotTime) {
+                toast.error('Please select a time');
+                return;
+            }
+    
+            const date = conSlots[slotIndex][0].datetime;
+            const slotDate = `${date.getDate()}_${date.getMonth() + 1}_${date.getFullYear()}`; // Add 1 to month
+    
+            console.log('Booking appointment:', {
+                conId,
+                slotDate,
+                slotTime
+            });
+    
             const { data } = await axios.post(
-                backendUrl + '/api/user/book-appointment',
+                `${backendUrl}/api/user/book-appointment`,
                 { conId, slotDate, slotTime },
                 { headers: { token } }
             );
-
+    
             if (data.success) {
                 toast.success(data.message);
                 getContractorsData();
@@ -118,10 +134,10 @@ const Appointment = () => {
                 toast.error(data.message);
             }
         } catch (error) {
-            console.log(error);
-            toast.error(error.message);
+            console.error('Booking error:', error);
+            toast.error(error.response?.data?.message || 'Error booking appointment');
         }
-        setConfirmModal(false); // Close modal after booking
+        setConfirmModal(false);
     };
 
     // Function to fetch rating data from Firebase

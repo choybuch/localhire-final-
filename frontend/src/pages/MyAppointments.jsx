@@ -43,6 +43,7 @@ const MyAppointments = () => {
     }, [token]);
 
     const openChat = (appointment) => {
+        console.log('Opening chat for appointment:', appointment);
         setCurrentChat(appointment);
 
         const q = query(
@@ -50,23 +51,48 @@ const MyAppointments = () => {
             orderBy("timestamp", "asc")
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setChatMessages(snapshot.docs.map((doc) => doc.data()));
-        });
+        try {
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                console.log('Received chat messages:', snapshot.docs.length);
+                setChatMessages(snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })));
+            }, (error) => {
+                console.error("Error listening to chat messages:", error);
+                toast.error("Error loading chat messages");
+            });
 
-        return () => unsubscribe();
+            return () => unsubscribe();
+        } catch (error) {
+            console.error("Error setting up chat listener:", error);
+            toast.error("Error setting up chat");
+        }
     };
 
     const sendMessage = async () => {
         if (!message.trim() || !currentChat) return;
 
-        await addDoc(collection(db, "chats", currentChat._id, "messages"), {
-            sender: "user",
-            message,
-            timestamp: Date.now()
-        });
+        try {
+            const messageData = {
+                sender: "user",
+                message: message.trim(),
+                timestamp: Date.now(),
+                read: false
+            };
 
-        setMessage('');
+            console.log('Sending message:', messageData);
+            
+            await addDoc(
+                collection(db, "chats", currentChat._id, "messages"), 
+                messageData
+            );
+
+            setMessage('');
+        } catch (error) {
+            console.error("Error sending message:", error);
+            toast.error("Error sending message");
+        }
     };
 
     const closeChat = () => {

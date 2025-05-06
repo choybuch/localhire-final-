@@ -60,34 +60,53 @@ const response = await fetch(`/api/appointments/status?appointmentId=${appointme
         }
     
         try {
+            console.log('Submitting rating:', {
+                contractorId,
+                rating,
+                appointmentId
+            });
+    
             const ratingRef = doc(db, "ratings", contractorId);
             const ratingSnap = await getDoc(ratingRef);
     
             if (ratingSnap.exists()) {
+                console.log('Updating existing rating doc');
                 await updateDoc(ratingRef, {
                     totalRating: increment(rating),
-                    totalReviews: increment(1),
+                    totalReviews: increment(1)
                 });
             } else {
+                console.log('Creating new rating doc');
                 await setDoc(ratingRef, {
                     totalRating: rating,
-                    totalReviews: 1,
+                    totalReviews: 1
                 });
             }
     
-            // ✅ Mark the specific appointment as rated
-            await fetch("/api/appointments/mark-rated", {
+            // Mark appointment as rated
+            const response = await fetch("/api/appointments/mark-rated", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ appointmentId }), // <-- fixed
+                headers: { 
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ 
+                    appointmentId,
+                    rating,
+                    contractorId 
+                })
             });
+    
+            if (!response.ok) {
+                throw new Error('Failed to mark appointment as rated');
+            }
     
             setHasRated(true);
             setShowRatingModal(false);
-            toast.success("Rating submitted!");
+            toast.success("Rating submitted successfully!");
+            
         } catch (error) {
             console.error("Error submitting rating:", error);
-            toast.error("Failed to submit rating.");
+            toast.error("Failed to submit rating. Please try again.");
         }
     };
     

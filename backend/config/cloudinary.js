@@ -1,4 +1,5 @@
-import { v2 as cloudinary } from 'cloudinary';
+import pkg from 'cloudinary';
+const { v2: cloudinary } = pkg;
 
 const connectCloudinary = async () => {
   try {
@@ -18,8 +19,6 @@ const connectCloudinary = async () => {
 
   } catch (error) {
     console.error("Cloudinary connection failed:", error);
-    // Consider throwing the error or exiting the process
-    // depending on your application's requirements
     throw error;
   }
 };

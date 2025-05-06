@@ -25,7 +25,7 @@ app.use("/api/user", userRouter)
 app.use("/api/admin", adminRouter)
 app.use("/api/report", reportRoutes);
 app.use("/api/appointments", appointmentRoutes);
-app.use('/api/contractors', contractorRouter);
+app.use('/api/contractor', contractorRouter);
 
 app.get("/", (req, res) => {
   res.send("API Working")

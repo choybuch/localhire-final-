@@ -1,10 +1,11 @@
+import pkg from 'cloudinary';
+const { v2: cloudinary } = pkg;
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import validator from "validator";
 import userModel from "../models/userModel.js";
 import contractorModel from "../models/contractorModel.js";
 import appointmentModel from "../models/appointmentModel.js";
-import { v2 as cloudinary } from 'cloudinary'
 import stripe from "stripe";
 import razorpay from 'razorpay';
 
@@ -141,7 +142,7 @@ const bookAppointment = async (req, res) => {
             return res.json({ success: false, message: 'Contractor Not Available' })
         }
 
-        let slots_booked = conData.slots_booked
+        let slots_booked = conData.slots_booked || {};  // Initialize as empty object if undefined
 
         // checking for slot availablity 
         if (slots_booked[slotDate]) {

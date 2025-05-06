@@ -3,7 +3,8 @@ import appointmentModel from "../models/appointmentModel.js";
 import contractorModel from "../models/contractorModel.js";
 import bcrypt from "bcrypt";
 import validator from "validator";
-import { v2 as cloudinary } from "cloudinary";
+import pkg from 'cloudinary';
+const { v2: cloudinary } = pkg;
 import userModel from "../models/userModel.js";
 
 // API for admin login
@@ -197,6 +198,45 @@ const getUserDetails = async (req, res) => {
     }
 };
 
+const approveContractor = async (req, res) => {
+    try {
+        const { contractorId, approved } = req.body;
+
+        if (!contractorId) {
+            return res.status(400).json({
+                success: false,
+                message: "Contractor ID is required"
+            });
+        }
+
+        if (approved) {
+            // Approve the contractor
+            await contractorModel.findByIdAndUpdate(contractorId, {
+                isApproved: true,
+                approvalDate: new Date()
+            });
+            res.json({
+                success: true,
+                message: "Contractor approved successfully"
+            });
+        } else {
+            // Reject and delete the contractor
+            await contractorModel.findByIdAndDelete(contractorId);
+            res.json({
+                success: true,
+                message: "Contractor rejected and removed"
+            });
+        }
+
+    } catch (error) {
+        console.error("Contractor approval error:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 export {
     loginAdmin,
     appointmentsAdmin,
@@ -205,5 +245,6 @@ export {
     allContractors,
     adminDashboard,
     pendingApprovals,
-    getUserDetails // Ensure pendingApprovals is exported
+    getUserDetails,
+    approveContractor // Ensure pendingApprovals is exported
 }
