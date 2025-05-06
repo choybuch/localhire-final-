@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { db } from "../firebase";
-import { doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, increment, writeBatch, serverTimestamp } from "firebase/firestore";
 import { toast } from 'react-toastify';
 
 const Rating = ({ contractorId, userId, appointmentId }) => {
@@ -21,6 +21,20 @@ const Rating = ({ contractorId, userId, appointmentId }) => {
     
             try {
                 setIsLoading(true);
+                console.log('Checking appointment rating:', appointmentId);
+                
+                // First, check if this appointment has already been rated in Firebase
+                const appointmentRatingRef = doc(db, "appointmentRatings", appointmentId);
+                const appointmentRatingSnap = await getDoc(appointmentRatingRef);
+                
+                if (appointmentRatingSnap.exists()) {
+                    console.log("Found existing rating:", appointmentRatingSnap.data());
+                    setHasRated(true);
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Check appointment status from backend
                 const response = await fetch(
                     `${backendUrl}/api/appointments/status?appointmentId=${appointmentId}&userId=${userId}&contractorId=${contractorId}`,
                     {
@@ -31,22 +45,23 @@ const Rating = ({ contractorId, userId, appointmentId }) => {
                     }
                 );
 
-                console.log('Response from backend:', response.status);
-                
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
                 console.log("Fetched appointment data:", data);
-    
-                if (data.isCompleted === true) {
-                    setHasCompletedAppointment(true);
-                }
-                setHasRated(data.hasBeenRated);
+
+                setHasCompletedAppointment(data.isCompleted === true);
+                setHasRated(data.hasBeenRated === true);
             } catch (error) {
                 console.error("Error checking appointment completion:", error);
-                toast.error("Error checking appointment status");
+                // More specific error messages
+                if (error.code === 'permission-denied') {
+                    toast.error("Permission denied. Please try logging in again.");
+                } else {
+                    toast.error("Error checking appointment status");
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -67,21 +82,47 @@ const Rating = ({ contractorId, userId, appointmentId }) => {
         }
     
         try {
-            // Update Firebase rating
+            console.log('Submitting rating:', {
+                contractorId,
+                appointmentId,
+                rating
+            });
+
+            // Create a batch to ensure all operations succeed or fail together
+            const batch = writeBatch(db);
+
+            // Update contractor's total rating
             const ratingRef = doc(db, "ratings", contractorId);
             const ratingSnap = await getDoc(ratingRef);
     
             if (ratingSnap.exists()) {
-                await updateDoc(ratingRef, {
+                console.log('Updating existing rating');
+                batch.update(ratingRef, {
                     totalRating: increment(rating),
-                    totalReviews: increment(1)
+                    totalReviews: increment(1),
+                    lastUpdated: serverTimestamp()
                 });
             } else {
-                await setDoc(ratingRef, {
+                console.log('Creating new rating');
+                batch.set(ratingRef, {
                     totalRating: rating,
-                    totalReviews: 1
+                    totalReviews: 1,
+                    createdAt: serverTimestamp()
                 });
             }
+
+            // Store the rating status for this specific appointment
+            const appointmentRatingRef = doc(db, "appointmentRatings", appointmentId);
+            batch.set(appointmentRatingRef, {
+                userId,
+                contractorId,
+                rating,
+                timestamp: serverTimestamp()
+            });
+
+            // Commit the batch
+            await batch.commit();
+            console.log('Firebase updates completed');
     
             // Update backend
             const response = await fetch(`${backendUrl}/api/appointments/mark-rated`, {
@@ -106,7 +147,11 @@ const Rating = ({ contractorId, userId, appointmentId }) => {
             
         } catch (error) {
             console.error("Error submitting rating:", error);
-            toast.error("Failed to submit rating. Please try again.");
+            if (error.code === 'permission-denied') {
+                toast.error("Permission denied. Please try logging in again.");
+            } else {
+                toast.error("Failed to submit rating. Please try again.");
+            }
         }
     };
 

@@ -23,7 +23,8 @@ app.use(express.json())
 const allowedOrigins = [
     'https://localhire-final.vercel.app',
     'https://localhire-final-admin.vercel.app',
-    'http://localhost:5173'
+    'http://localhost:5173',
+    'http://localhost:5174'
 ];
 
 app.use(cors({
