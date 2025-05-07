@@ -1,13 +1,13 @@
-import express from "express"
 import cors from 'cors'
 import 'dotenv/config'
-import connectDB from "./config/mongodb.js"
+import express from "express"
 import connectCloudinary from "./config/cloudinary.js"
-import userRouter from "./routes/userRoute.js"
-import contractorRouter from "./routes/contractorRoute.js"
+import connectDB from "./config/mongodb.js"
 import adminRouter from "./routes/adminRoute.js"
-import reportRoutes from "./routes/reportRoute.js";
-import appointmentRoutes from './routes/appointment.js';
+import appointmentRoutes from './routes/appointment.js'
+import contractorRouter from "./routes/contractorRoute.js"
+import reportRoutes from "./routes/reportRoute.js"
+import userRouter from "./routes/userRoute.js"
 
 
 // app config
@@ -24,7 +24,8 @@ const allowedOrigins = [
     'https://localhire-final.vercel.app',
     'https://localhire-final-admin.vercel.app',
     'http://localhost:5173',
-    'http://localhost:5174'
+    'http://localhost:5174',
+    'http://localhost:5175'
 ];
 
 app.use(cors({
@@ -37,7 +38,7 @@ app.use(cors({
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'dtoken']
+    allowedHeaders: ['Content-Type', 'Authorization', 'dtoken', 'atoken'] // Add 'atoken' here
 }));
 
 // Add OPTIONS handling for preflight requests
@@ -49,12 +50,6 @@ app.use((req, res, next) => {
         origin: req.headers.origin,
         headers: req.headers
     });
-    next();
-});
-
-// Ensure JSON content type for API responses
-app.use('/api/*', (req, res, next) => {
-    res.setHeader('Content-Type', 'application/json');
     next();
 });
 
