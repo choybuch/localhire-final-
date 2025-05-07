@@ -38,7 +38,7 @@ app.use(cors({
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'dtoken', 'atoken'] // Add 'atoken' here
+    allowedHeaders: ['Content-Type', 'Authorization', 'dtoken', 'atoken', 'token'] // Add 'atoken' here
 }));
 
 // Add OPTIONS handling for preflight requests
